@@ -1,0 +1,58 @@
+{
+  "info": {
+    "name": "Bridge PoC API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "e6f7a4d1-8f46-4a36-b9d2-collection"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "batchId", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "messageId", "value": "00000000-0000-0000-0000-000000000000" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+      }
+    },
+    {
+      "name": "Metrics",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/metrics", "host": ["{{baseUrl}}"], "path": ["metrics"] }
+      }
+    },
+    {
+      "name": "List Batches",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/batches?limit=20&offset=0",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "batches"],
+          "query": [
+            { "key": "limit", "value": "20" },
+            { "key": "offset", "value": "0" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Batch",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/v1/batches/{{batchId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","batches","{{batchId}}"] }
+      }
+    },
+    {
+      "name": "Get Message",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/v1/messages/{{messageId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","messages","{{messageId}}"] }
+      }
+    }
+  ]
+}
+

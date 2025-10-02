@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  bridge-app:
+    build: .
+    environment:
+      - NODE_ENV=production
+      - API_PORT=3000
+      - MQTT_HOST=${MQTT_HOST:-mqtt://mosquitto:1883}
+      - MQTT_USER=${MQTT_USER:-}
+      - MQTT_PASS=${MQTT_PASS:-}
+      - MQTT_TOPIC_FILTER=${MQTT_TOPIC_FILTER:-mqtt/things/#}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - REDIS_STREAM=${REDIS_STREAM:-mqtt:messages}
+      - REDIS_GROUP=${REDIS_GROUP:-bridge}
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-mqtt}
+      - POSTGRES_USER=${POSTGRES_USER:-mqtt}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mqtt}
+      - BATCH_SIZE=${BATCH_SIZE:-1000}
+      - BATCH_TIMEOUT_MS=${BATCH_TIMEOUT_MS:-300000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mosquitto
+      - redis
+      - postgres
+    restart: unless-stopped
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./docker/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-mqtt}
+      - POSTGRES_USER=${POSTGRES_USER:-mqtt}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mqtt}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+
+volumes:
+  pgdata:
