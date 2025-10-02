@@ -52,13 +52,13 @@ sh -c 'export $(cat .env.devnet | grep -v "^#" | xargs) && node scripts/check-ba
 
 ## 📦 Scripts Created
 
-| Script | Purpose |
-|--------|---------|
-| `scripts/generate-wallet.js` | Generate new Solana wallet |
-| `scripts/request-airdrop.js` | Request SOL from devnet faucet |
-| `scripts/check-balance.js` | Check wallet balance and connection |
-| `scripts/test-solana-tx.js` | Test memo transaction on Solana |
-| `scripts/devnet.sh` | Helper to run commands with devnet env |
+| Script                       | Purpose                                |
+| ---------------------------- | -------------------------------------- |
+| `scripts/generate-wallet.js` | Generate new Solana wallet             |
+| `scripts/request-airdrop.js` | Request SOL from devnet faucet         |
+| `scripts/check-balance.js`   | Check wallet balance and connection    |
+| `scripts/test-solana-tx.js`  | Test memo transaction on Solana        |
+| `scripts/devnet.sh`          | Helper to run commands with devnet env |
 
 ---
 
@@ -91,16 +91,19 @@ solana_confirmed_at TIMESTAMP        -- Confirmation time
 Now that devnet is configured, you can:
 
 1. **Implement SolanaClient** (`src/clients/solana.js`)
+
    - Connection management
    - Memo transaction creation
    - Error handling
 
 2. **Implement BlockchainService** (`src/services/blockchainService.js`)
+
    - Recording batches to Solana
    - Retry mechanism
    - Status tracking
 
 3. **Integrate with BatchProcessor**
+
    - Trigger blockchain recording after batch completion
    - Non-blocking async calls
 
@@ -146,7 +149,7 @@ https://explorer.solana.com/address/YOUR_PUBLIC_KEY?cluster=devnet
 Full documentation in `docs/solana-integration/`:
 
 - System Requirements
-- Technical Architecture  
+- Technical Architecture
 - Development Plan
 - Setup Guide
 

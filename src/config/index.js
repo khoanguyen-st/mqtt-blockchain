@@ -33,6 +33,16 @@ const cfg = {
     size: parseInt(process.env.BATCH_SIZE || '1000', 10),
     timeoutMs: parseInt(process.env.BATCH_TIMEOUT_MS || String(5 * 60 * 1000), 10),
   },
+  solana: {
+    rpcUrl: process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com',
+    privateKey: process.env.SOLANA_PRIVATE_KEY,
+    network: process.env.SOLANA_NETWORK || 'devnet',
+    enabled: Boolean(process.env.SOLANA_ENABLED !== 'false'), // Default enabled
+  },
+  blockchain: {
+    retryIntervalMs: parseInt(process.env.BLOCKCHAIN_RETRY_INTERVAL_MS || String(5 * 60 * 1000), 10),
+    maxRetries: parseInt(process.env.BLOCKCHAIN_MAX_RETRIES || '10', 10),
+  },
 };
 
 module.exports = cfg;
