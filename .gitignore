@@ -6,10 +6,17 @@ yarn-error.log*
 
 # Environment variables
 .env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.devnet
+.env.mainnet
+
+# Solana wallet files (NEVER commit!)
+wallet-*.json
+*.keypair
 
 # Runtime data
 pids
