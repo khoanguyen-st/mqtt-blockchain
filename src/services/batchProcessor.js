@@ -1,10 +1,11 @@
-const { randomUUID } = require('crypto');
-const cfg = require('../config');
-const logger = require('../utils/logger');
-const { currentBatchGauge, batchesCompleted } = require('../utils/metrics');
-const { readFromStream, ack } = require('../clients/redis');
-const { generateMessageHash, generateBatchHash } = require('./hashGenerator');
-const { saveBatch } = require('./storage');
+const { randomUUID } = require("crypto");
+const cfg = require("../config");
+const logger = require("../utils/logger");
+const { currentBatchGauge, batchesCompleted } = require("../utils/metrics");
+const { readFromStream, ack } = require("../clients/redis");
+const { generateMessageHash, generateBatchHash } = require("./hashGenerator");
+const { saveBatch } = require("./storage");
+const blockchainService = require("./blockchainService");
 
 class Batch {
   constructor() {
@@ -19,7 +20,8 @@ class Batch {
     this.messages.push(message);
     this.messageHashes.push(message.hash);
     this.messageCount = this.messages.length;
-    if (!this.startTimestamp) this.startTimestamp = new Date(message.receivedAt || Date.now());
+    if (!this.startTimestamp)
+      this.startTimestamp = new Date(message.receivedAt || Date.now());
     this.endTimestamp = new Date(message.receivedAt || Date.now());
     currentBatchGauge.set(this.messageCount);
   }
@@ -33,7 +35,13 @@ class BatchProcessor {
 
   startTimer() {
     if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.completeBatch().catch((e) => logger.error({ msg: 'Batch timer error', err: e.message })), cfg.batching.timeoutMs);
+    this.timer = setTimeout(
+      () =>
+        this.completeBatch().catch((e) =>
+          logger.error({ msg: "Batch timer error", err: e.message })
+        ),
+      cfg.batching.timeoutMs
+    );
   }
 
   async handleEntry(streamId, fields) {
@@ -71,7 +79,27 @@ class BatchProcessor {
     const batchHash = generateBatchHash(b);
     await saveBatch(b, batchHash);
     batchesCompleted.inc();
-    logger.info({ msg: 'Batch completed', id: b.id, count: b.messageCount });
+    logger.info({ msg: "Batch completed", id: b.id, count: b.messageCount });
+
+    if (cfg.solana.enabled) {
+      const batchForBlockchain = {
+        batch_id: b.id,
+        message_count: b.messageCount,
+        start_timestamp: b.startTimestamp,
+        end_timestamp: b.endTimestamp,
+      };
+
+      blockchainService
+        .recordBatchWithFallback(batchForBlockchain, batchHash)
+        .catch((err) => {
+          logger.warn({
+            msg: "Blockchain recording queued for retry",
+            batchId: b.id,
+            err: err.message,
+          });
+        });
+    }
+
     this.batch = new Batch();
     currentBatchGauge.set(0);
     if (this.timer) clearTimeout(this.timer);
@@ -89,7 +117,7 @@ class BatchProcessor {
           }
         }
       } catch (err) {
-        logger.error({ msg: 'Batch loop error', err: err.message });
+        logger.error({ msg: "Batch loop error", err: err.message });
         await sleep(1000);
       }
     }
@@ -109,4 +137,3 @@ function sleep(ms) {
 }
 
 module.exports = { BatchProcessor };
-

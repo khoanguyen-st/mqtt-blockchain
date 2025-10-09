@@ -5,19 +5,19 @@ const {
   Transaction,
   SystemProgram,
   LAMPORTS_PER_SOL,
-  sendAndConfirmTransaction
-} = require('@solana/web3.js');
-const bs58 = require('bs58');
-const logger = require('../utils/logger');
+  sendAndConfirmTransaction,
+} = require("@solana/web3.js");
+const bs58 = require("bs58");
+const logger = require("../utils/logger");
 
 // Solana Memo Program ID (built-in program)
 const MEMO_PROGRAM_ID = new PublicKey(
-  'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'
+  "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
 );
 
 /**
  * SolanaClient - Handles all interactions with Solana blockchain
- * 
+ *
  * Responsibilities:
  * - Manage wallet connection
  * - Create and send memo transactions
@@ -30,7 +30,7 @@ class SolanaClient {
     this.connection = null;
     this.wallet = null;
     this.isHealthy = false;
-    
+
     this.initialize();
   }
 
@@ -42,22 +42,24 @@ class SolanaClient {
       // Create connection to Solana RPC
       this.connection = new Connection(
         this.config.rpcUrl,
-        'confirmed' // Commitment level
+        "confirmed" // Commitment level
       );
-      
+
       // Load wallet from private key
       this.wallet = this.loadWallet();
-      
+
       // Mark as healthy (will be verified in checkHealth)
       this.isHealthy = true;
-      
-      logger.info('SolanaClient initialized', {
+
+      logger.info("SolanaClient initialized", {
         network: this.config.network,
         publicKey: this.wallet.publicKey.toBase58(),
-        rpcUrl: this.config.rpcUrl
+        rpcUrl: this.config.rpcUrl,
       });
     } catch (error) {
-      logger.error('Failed to initialize SolanaClient', { error: error.message });
+      logger.error("Failed to initialize SolanaClient", {
+        error: error.message,
+      });
       this.isHealthy = false;
       throw error;
     }
@@ -69,30 +71,32 @@ class SolanaClient {
    */
   loadWallet() {
     const privateKey = this.config.privateKey;
-    
+
     if (!privateKey) {
-      throw new Error('SOLANA_PRIVATE_KEY not configured');
+      throw new Error("SOLANA_PRIVATE_KEY not configured");
     }
 
     try {
       // Decode base58 private key
       const privateKeyBytes = bs58.decode(privateKey);
-      
+
       // Validate key length (should be 64 bytes)
       if (privateKeyBytes.length !== 64) {
-        throw new Error(`Invalid private key length: ${privateKeyBytes.length} (expected 64)`);
+        throw new Error(
+          `Invalid private key length: ${privateKeyBytes.length} (expected 64)`
+        );
       }
-      
+
       // Create keypair
       const wallet = Keypair.fromSecretKey(privateKeyBytes);
-      
-      logger.info('Wallet loaded successfully', {
-        publicKey: wallet.publicKey.toBase58()
+
+      logger.info("Wallet loaded successfully", {
+        publicKey: wallet.publicKey.toBase58(),
       });
-      
+
       return wallet;
     } catch (error) {
-      logger.error('Failed to load wallet', { error: error.message });
+      logger.error("Failed to load wallet", { error: error.message });
       throw new Error(`Failed to load wallet: ${error.message}`);
     }
   }
@@ -105,40 +109,40 @@ class SolanaClient {
     try {
       // Check RPC connection
       const blockHeight = await this.connection.getBlockHeight();
-      
+
       // Check wallet balance
       const balance = await this.getWalletBalance();
-      
+
       // Determine balance status
-      let balanceStatus = 'ok';
+      let balanceStatus = "ok";
       if (balance < 0.05) {
-        balanceStatus = 'critical';
+        balanceStatus = "critical";
       } else if (balance < 0.1) {
-        balanceStatus = 'low';
+        balanceStatus = "low";
       }
-      
+
       this.isHealthy = true;
-      
+
       return {
         healthy: true,
         rpc: {
           connected: true,
           blockHeight,
-          url: this.config.rpcUrl
+          url: this.config.rpcUrl,
         },
         wallet: {
           publicKey: this.wallet.publicKey.toBase58(),
           balance,
-          balanceStatus
-        }
+          balanceStatus,
+        },
       };
     } catch (error) {
-      logger.error('Health check failed', { error: error.message });
+      logger.error("Health check failed", { error: error.message });
       this.isHealthy = false;
-      
+
       return {
         healthy: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -152,7 +156,7 @@ class SolanaClient {
       const balance = await this.connection.getBalance(this.wallet.publicKey);
       return balance / LAMPORTS_PER_SOL;
     } catch (error) {
-      logger.error('Failed to get wallet balance', { error: error.message });
+      logger.error("Failed to get wallet balance", { error: error.message });
       throw error;
     }
   }
@@ -165,52 +169,52 @@ class SolanaClient {
    */
   async recordBatch(batch, batchHash) {
     const startTime = Date.now();
-    
+
     try {
-      logger.info('Recording batch to Solana', {
+      logger.info("Recording batch to Solana", {
         batchId: batch.batch_id,
-        messageCount: batch.message_count
+        messageCount: batch.message_count,
       });
 
       // Check if healthy
       if (!this.isHealthy) {
         return {
           success: false,
-          error: 'SOLANA_UNHEALTHY',
-          retryable: true
+          error: "SOLANA_UNHEALTHY",
+          retryable: true,
         };
       }
 
       // Create memo data (will be stored on blockchain)
       const memoData = this.createMemoData(batch, batchHash);
-      
+
       // Validate memo size (max 566 bytes for Solana memo)
       if (memoData.length > 566) {
-        logger.error('Memo data too large', { size: memoData.length });
+        logger.error("Memo data too large", { size: memoData.length });
         return {
           success: false,
-          error: 'MEMO_TOO_LARGE',
-          retryable: false
+          error: "MEMO_TOO_LARGE",
+          retryable: false,
         };
       }
 
       // Create transaction
       const transaction = new Transaction();
-      
+
       // Add minimal transfer (to self, 1 lamport)
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: this.wallet.publicKey,
           toPubkey: this.wallet.publicKey,
-          lamports: 1
+          lamports: 1,
         })
       );
-      
+
       // Add memo instruction
       transaction.add({
         keys: [],
         programId: MEMO_PROGRAM_ID,
-        data: Buffer.from(memoData)
+        data: Buffer.from(memoData),
       });
 
       // Send and confirm transaction
@@ -219,43 +223,43 @@ class SolanaClient {
         transaction,
         [this.wallet],
         {
-          commitment: 'confirmed',
+          commitment: "confirmed",
           maxRetries: 3,
-          skipPreflight: false
+          skipPreflight: false,
         }
       );
 
       const duration = Date.now() - startTime;
-      
-      logger.info('Batch recorded successfully', {
+
+      logger.info("Batch recorded successfully", {
         batchId: batch.batch_id,
         signature,
-        duration: `${duration}ms`
+        duration: `${duration}ms`,
       });
 
       return {
         success: true,
         signature,
-        duration
+        duration,
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-      
-      logger.error('Failed to record batch', {
+
+      logger.error("Failed to record batch", {
         batchId: batch.batch_id,
         error: error.message,
-        duration: `${duration}ms`
+        duration: `${duration}ms`,
       });
 
       // Categorize error
       const errorInfo = this.categorizeError(error);
-      
+
       return {
         success: false,
         error: errorInfo.type,
         message: error.message,
         retryable: errorInfo.retryable,
-        duration
+        duration,
       };
     }
   }
@@ -268,16 +272,16 @@ class SolanaClient {
    */
   createMemoData(batch, batchHash) {
     const memoData = {
-      type: 'VEEP_BATCH',
-      version: '1.0',
+      type: "VEEP_BATCH",
+      version: "1.0",
       batchId: batch.batch_id,
       batchHash: batchHash,
       messageCount: batch.message_count,
       startTimestamp: batch.start_timestamp,
       endTimestamp: batch.end_timestamp,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
-    
+
     return JSON.stringify(memoData);
   }
 
@@ -288,42 +292,43 @@ class SolanaClient {
    */
   async verifyBatch(signature) {
     try {
-      logger.info('Verifying batch on blockchain', { signature });
+      logger.info("Verifying batch on blockchain", { signature });
 
       // Get transaction with base64 encoding (more reliable)
       const tx = await this.connection.getParsedTransaction(signature, {
-        commitment: 'confirmed',
-        maxSupportedTransactionVersion: 0
+        commitment: "confirmed",
+        maxSupportedTransactionVersion: 0,
       });
 
       if (!tx) {
         return {
           verified: false,
-          error: 'Transaction not found',
-          signature
+          error: "Transaction not found",
+          signature,
         };
       }
 
       // Find memo instruction
-      const memoInstruction = tx.transaction.message.instructions.find(
-        (ix) => {
-          // Check if this is a parsed instruction with program 'spl-memo'
-          if (ix.program === 'spl-memo') {
-            return true;
-          }
-          // Or check programId string
-          if (ix.programId && ix.programId.toString() === MEMO_PROGRAM_ID.toString()) {
-            return true;
-          }
-          return false;
+      const memoInstruction = tx.transaction.message.instructions.find((ix) => {
+        // Check if this is a parsed instruction with program 'spl-memo'
+        if (ix.program === "spl-memo") {
+          return true;
         }
-      );
+        // Or check programId string
+        if (
+          ix.programId &&
+          ix.programId.toString() === MEMO_PROGRAM_ID.toString()
+        ) {
+          return true;
+        }
+        return false;
+      });
 
       if (!memoInstruction) {
         return {
           verified: false,
-          error: 'Memo instruction not found',
-          signature
+          error: "Memo instruction not found",
+          signature,
         };
       }
 
@@ -335,19 +340,19 @@ class SolanaClient {
         if (!memoText) {
           return {
             verified: false,
-            error: 'Memo data not found in instruction',
-            signature
+            error: "Memo data not found in instruction",
+            signature,
           };
         }
         memoData = JSON.parse(memoText);
       } catch (parseError) {
-        logger.error('Failed to parse memo', { 
-          error: parseError.message
+        logger.error("Failed to parse memo", {
+          error: parseError.message,
         });
         return {
           verified: false,
-          error: 'Failed to parse memo data: ' + parseError.message,
-          signature
+          error: "Failed to parse memo data: " + parseError.message,
+          signature,
         };
       }
 
@@ -358,18 +363,18 @@ class SolanaClient {
         slot: tx.slot,
         fee: tx.meta.fee,
         data: memoData,
-        explorer: this.getExplorerUrl(signature)
+        explorer: this.getExplorerUrl(signature),
       };
     } catch (error) {
-      logger.error('Failed to verify batch', {
+      logger.error("Failed to verify batch", {
         signature,
-        error: error.message
+        error: error.message,
       });
 
       return {
         verified: false,
         error: error.message,
-        signature
+        signature,
       };
     }
   }
@@ -380,7 +385,10 @@ class SolanaClient {
    * @returns {string} Explorer URL
    */
   getExplorerUrl(signature) {
-    const cluster = this.config.network === 'mainnet' ? '' : `?cluster=${this.config.network}`;
+    const cluster =
+      this.config.network === "mainnet"
+        ? ""
+        : `?cluster=${this.config.network}`;
     return `https://explorer.solana.com/tx/${signature}${cluster}`;
   }
 
@@ -391,43 +399,43 @@ class SolanaClient {
    */
   categorizeError(error) {
     const message = error.message.toLowerCase();
-    
+
     // Network/timeout errors - retryable
-    if (message.includes('timeout') || message.includes('timed out')) {
-      return { type: 'TIMEOUT', retryable: true };
+    if (message.includes("timeout") || message.includes("timed out")) {
+      return { type: "TIMEOUT", retryable: true };
     }
-    
-    if (message.includes('429') || message.includes('rate limit')) {
-      return { type: 'RATE_LIMITED', retryable: true };
+
+    if (message.includes("429") || message.includes("rate limit")) {
+      return { type: "RATE_LIMITED", retryable: true };
     }
-    
-    if (message.includes('network') || message.includes('connection')) {
-      return { type: 'NETWORK_ERROR', retryable: true };
+
+    if (message.includes("network") || message.includes("connection")) {
+      return { type: "NETWORK_ERROR", retryable: true };
     }
-    
-    if (message.includes('blockhash')) {
-      return { type: 'BLOCKHASH_EXPIRED', retryable: true };
+
+    if (message.includes("blockhash")) {
+      return { type: "BLOCKHASH_EXPIRED", retryable: true };
     }
-    
+
     // Balance errors - not retryable
-    if (message.includes('insufficient') || message.includes('balance')) {
-      return { type: 'INSUFFICIENT_FUNDS', retryable: false };
+    if (message.includes("insufficient") || message.includes("balance")) {
+      return { type: "INSUFFICIENT_FUNDS", retryable: false };
     }
-    
+
     // Transaction errors - not retryable
-    if (message.includes('invalid') || message.includes('failed')) {
-      return { type: 'INVALID_TRANSACTION', retryable: false };
+    if (message.includes("invalid") || message.includes("failed")) {
+      return { type: "INVALID_TRANSACTION", retryable: false };
     }
-    
+
     // Default: retryable
-    return { type: 'UNKNOWN_ERROR', retryable: true };
+    return { type: "UNKNOWN_ERROR", retryable: true };
   }
 
   /**
    * Close connection (cleanup)
    */
   async close() {
-    logger.info('Closing SolanaClient');
+    logger.info("Closing SolanaClient");
     this.isHealthy = false;
     // Connection cleanup happens automatically
   }

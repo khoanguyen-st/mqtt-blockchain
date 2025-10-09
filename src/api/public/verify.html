@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Batch Verification - Solana Blockchain</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+          "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .container {
+        max-width: 800px;
+        margin: 40px auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+      }
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+      .header h1 {
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+      .header p {
+        opacity: 0.9;
+        font-size: 14px;
+      }
+      .content {
+        padding: 30px;
+      }
+      .input-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+      }
+      input[type="text"]:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+      button {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      button:hover {
+        transform: translateY(-2px);
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .result {
+        margin-top: 30px;
+        padding: 20px;
+        border-radius: 8px;
+        display: none;
+      }
+      .result.success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+      }
+      .result.error {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+      }
+      .result.warning {
+        background: #fff3cd;
+        border: 1px solid #ffeeba;
+        color: #856404;
+      }
+      .result h3 {
+        margin-bottom: 15px;
+        font-size: 18px;
+      }
+      .data-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      }
+      .data-row:last-child {
+        border-bottom: none;
+      }
+      .data-label {
+        font-weight: 600;
+        color: #555;
+      }
+      .data-value {
+        font-family: "Courier New", monospace;
+        color: #333;
+        word-break: break-all;
+      }
+      .explorer-link {
+        display: inline-block;
+        margin-top: 15px;
+        padding: 10px 20px;
+        background: #14f195;
+        color: #000;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: transform 0.2s;
+      }
+      .explorer-link:hover {
+        transform: translateY(-2px);
+      }
+      .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .status-confirmed {
+        background: #d4edda;
+        color: #155724;
+      }
+      .status-pending {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .status-failed {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .loading {
+        text-align: center;
+        padding: 20px;
+        display: none;
+      }
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔍 Blockchain Verification</h1>
+        <p>Verify batch integrity on Solana blockchain</p>
+      </div>
+      <div class="content">
+        <div class="input-group">
+          <label for="batchId">Batch ID</label>
+          <input
+            type="text"
+            id="batchId"
+            placeholder="Enter batch UUID (e.g., 550e8400-e29b-41d4-a716-446655440000)"
+          />
+        </div>
+        <button id="verifyBtn" onclick="verifyBatch()">Verify Batch</button>
+
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <p style="margin-top: 10px; color: #666">
+            Verifying on blockchain...
+          </p>
+        </div>
+
+        <div class="result" id="result"></div>
+      </div>
+    </div>
+
+    <script>
+      // Get batch ID from URL if present
+      const urlParams = new URLSearchParams(window.location.search);
+      const batchIdParam = urlParams.get("batchId");
+      if (batchIdParam) {
+        document.getElementById("batchId").value = batchIdParam;
+        // Auto-verify if batch ID is in URL
+        setTimeout(() => verifyBatch(), 500);
+      }
+
+      async function verifyBatch() {
+        const batchId = document.getElementById("batchId").value.trim();
+        const resultDiv = document.getElementById("result");
+        const loadingDiv = document.getElementById("loading");
+        const verifyBtn = document.getElementById("verifyBtn");
+
+        if (!batchId) {
+          resultDiv.className = "result error";
+          resultDiv.innerHTML =
+            "<h3>❌ Error</h3><p>Please enter a batch ID</p>";
+          resultDiv.style.display = "block";
+          return;
+        }
+
+        // Show loading
+        resultDiv.style.display = "none";
+        loadingDiv.style.display = "block";
+        verifyBtn.disabled = true;
+
+        try {
+          const response = await fetch(`/api/v1/blockchain/verify/${batchId}`);
+          const data = await response.json();
+
+          loadingDiv.style.display = "none";
+          verifyBtn.disabled = false;
+
+          if (!response.ok) {
+            throw new Error(
+              data.message || data.error || "Verification failed"
+            );
+          }
+
+          // Display results
+          if (data.verified) {
+            resultDiv.className = "result success";
+            resultDiv.innerHTML = `
+                        <h3>✅ Verification Successful</h3>
+                        <p style="margin-bottom: 15px;">All data matches blockchain records</p>
+                        <div class="data-row">
+                            <span class="data-label">Batch ID:</span>
+                            <span class="data-value">${
+                              data.database.batchId
+                            }</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Message Count:</span>
+                            <span class="data-value">${
+                              data.database.messageCount
+                            }</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Batch Hash:</span>
+                            <span class="data-value">${
+                              data.database.batchHash
+                            }</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Transaction:</span>
+                            <span class="data-value">${data.signature.substring(
+                              0,
+                              20
+                            )}...</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Confirmed At:</span>
+                            <span class="data-value">${new Date(
+                              data.confirmedAt
+                            ).toLocaleString()}</span>
+                        </div>
+                        ${
+                          data.explorerUrl
+                            ? `<a href="${data.explorerUrl}" target="_blank" class="explorer-link">View on Solana Explorer →</a>`
+                            : ""
+                        }
+                    `;
+          } else if (data.message) {
+            resultDiv.className = "result warning";
+            resultDiv.innerHTML = `
+                        <h3>⏳ ${data.message}</h3>
+                        <div class="data-row">
+                            <span class="data-label">Status:</span>
+                            <span class="data-value"><span class="status-badge status-${
+                              data.status
+                            }">${data.status}</span></span>
+                        </div>
+                        ${
+                          data.lastError
+                            ? `<p style="margin-top: 10px; color: #856404;"><strong>Last Error:</strong> ${data.lastError}</p>`
+                            : ""
+                        }
+                    `;
+          } else {
+            resultDiv.className = "result error";
+            resultDiv.innerHTML = `
+                        <h3>❌ Verification Failed</h3>
+                        <p style="margin-bottom: 15px;">${
+                          data.error || "Data mismatch detected"
+                        }</p>
+                        ${
+                          data.matches
+                            ? `
+                        <div class="data-row">
+                            <span class="data-label">Batch ID Match:</span>
+                            <span class="data-value">${
+                              data.matches.batchId ? "✅" : "❌"
+                            }</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Message Count Match:</span>
+                            <span class="data-value">${
+                              data.matches.messageCount ? "✅" : "❌"
+                            }</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Batch Hash Match:</span>
+                            <span class="data-value">${
+                              data.matches.batchHash ? "✅" : "❌"
+                            }</span>
+                        </div>
+                        `
+                            : ""
+                        }
+                        ${
+                          data.explorerUrl
+                            ? `<a href="${data.explorerUrl}" target="_blank" class="explorer-link">View on Solana Explorer →</a>`
+                            : ""
+                        }
+                    `;
+          }
+
+          resultDiv.style.display = "block";
+        } catch (error) {
+          loadingDiv.style.display = "none";
+          verifyBtn.disabled = false;
+          resultDiv.className = "result error";
+          resultDiv.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>${error.message}</p>
+                `;
+          resultDiv.style.display = "block";
+        }
+      }
+
+      // Allow Enter key to submit
+      document
+        .getElementById("batchId")
+        .addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            verifyBatch();
+          }
+        });
+    </script>
+  </body>
+</html>
