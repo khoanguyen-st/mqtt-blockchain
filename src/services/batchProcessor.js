@@ -5,7 +5,6 @@ const { currentBatchGauge, batchesCompleted } = require("../utils/metrics");
 const { readFromStream, ack } = require("../clients/redis");
 const { generateMessageHash, generateBatchHash } = require("./hashGenerator");
 const { saveBatch } = require("./storage");
-const blockchainService = require("./blockchainService");
 
 class Batch {
   constructor() {
@@ -81,24 +80,9 @@ class BatchProcessor {
     batchesCompleted.inc();
     logger.info({ msg: "Batch completed", id: b.id, count: b.messageCount });
 
-    if (cfg.solana.enabled) {
-      const batchForBlockchain = {
-        batch_id: b.id,
-        message_count: b.messageCount,
-        start_timestamp: b.startTimestamp,
-        end_timestamp: b.endTimestamp,
-      };
-
-      blockchainService
-        .recordBatchWithFallback(batchForBlockchain, batchHash)
-        .catch((err) => {
-          logger.warn({
-            msg: "Blockchain recording queued for retry",
-            batchId: b.id,
-            err: err.message,
-          });
-        });
-    }
+    // Note: Blockchain recording is now handled by BlockchainScheduler
+    // Batches will be recorded to Solana every 3 hours (0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h)
+    // No immediate blockchain recording here to reduce transaction costs and RPC load
 
     this.batch = new Batch();
     currentBatchGauge.set(0);

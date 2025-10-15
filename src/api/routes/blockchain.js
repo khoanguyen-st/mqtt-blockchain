@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const blockchainService = require("../../services/blockchainService");
+const blockchainScheduler = require("../../services/blockchainScheduler");
 const { getBatch } = require("../../services/storage");
 const cfg = require("../../config");
 
@@ -150,6 +151,47 @@ router.get("/verify/:batchId", async (req, res, next) => {
         signature: batch.solana_tx_signature,
       });
     }
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Get blockchain scheduler status and statistics
+router.get("/scheduler", async (req, res, next) => {
+  try {
+    if (!cfg.solana.enabled) {
+      return res.json({
+        enabled: false,
+        message: "Blockchain integration is disabled",
+      });
+    }
+
+    const stats = blockchainScheduler.getStatistics();
+    res.json(stats);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Manually trigger blockchain recording (for testing or manual runs)
+router.post("/scheduler/trigger", async (req, res, next) => {
+  try {
+    if (!cfg.solana.enabled) {
+      return res.status(503).json({
+        error: "Blockchain integration is disabled",
+      });
+    }
+
+    // Trigger recording in background
+    blockchainScheduler.triggerManualRecording().catch((err) => {
+      logger.error("Manual recording failed", { error: err.message });
+    });
+
+    res.json({
+      success: true,
+      message: "Manual blockchain recording triggered",
+      stats: blockchainScheduler.getStatistics(),
+    });
   } catch (e) {
     next(e);
   }

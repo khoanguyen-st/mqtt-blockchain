@@ -50,6 +50,12 @@ const cfg = {
       10
     ),
     maxRetries: parseInt(process.env.BLOCKCHAIN_MAX_RETRIES || "10", 10),
+    recordOnStartup: Boolean(
+      process.env.BLOCKCHAIN_RECORD_ON_STARTUP === "true"
+    ), // Record pending batches on startup
+    scheduleEnabled: Boolean(
+      process.env.BLOCKCHAIN_SCHEDULE_ENABLED !== "false"
+    ), // Enable 3-hour scheduling (default: true)
   },
 };
 
