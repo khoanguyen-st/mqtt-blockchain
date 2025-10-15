@@ -25,6 +25,7 @@ function createServer() {
   app.use("/api/v1/batches", require("./routes/batches"));
   app.use("/api/v1/messages", require("./routes/messages"));
   app.use("/api/v1/blockchain", require("./routes/blockchain"));
+  app.use("/api/v1/assets", require("./routes/assets")); // Layer 1: Asset metadata
 
   // Error handler
   app.use((err, req, res, next) => {

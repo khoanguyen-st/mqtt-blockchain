@@ -5,6 +5,8 @@ const { currentBatchGauge, batchesCompleted } = require("../utils/metrics");
 const { readFromStream, ack } = require("../clients/redis");
 const { generateMessageHash, generateBatchHash } = require("./hashGenerator");
 const { saveBatch } = require("./storage");
+const { parseLoRaWANUplink } = require("./loraWANParser");
+const assetMetadataService = require("./assetMetadataService");
 
 class Batch {
   constructor() {
@@ -46,14 +48,47 @@ class BatchProcessor {
   async handleEntry(streamId, fields) {
     const obj = {};
     for (let i = 0; i < fields.length; i += 2) obj[fields[i]] = fields[i + 1];
+
+    const rawPayload = safeParse(obj.payload);
+
+    // Try to parse LoRaWAN uplink for enhanced metadata
+    let parsedLoRaWAN = null;
+    let assetId = null;
+    try {
+      parsedLoRaWAN = parseLoRaWANUplink(rawPayload);
+
+      if (parsedLoRaWAN) {
+        // Upsert asset metadata (Layer 1 compliance)
+        const asset = await assetMetadataService.upsertAsset(parsedLoRaWAN);
+        assetId = asset.asset_id;
+
+        logger.debug("Asset metadata updated", {
+          deviceEUI: parsedLoRaWAN.deviceEUI,
+          assetId,
+        });
+      }
+    } catch (error) {
+      logger.warn("Failed to parse LoRaWAN or upsert asset", {
+        error: error.message,
+      });
+      // Continue processing - don't fail on metadata parsing
+    }
+
     const message = {
       id: obj.messageId,
       topic: obj.topic,
-      payload: safeParse(obj.payload),
+      payload: rawPayload,
       receivedAt: obj.receivedAt,
       tenantId: obj.tenantId,
       siteId: obj.siteId,
       deviceId: obj.deviceId,
+
+      // Layer 1: Asset metadata (if available)
+      assetId,
+      deviceEUI: parsedLoRaWAN?.deviceEUI || null,
+      location: parsedLoRaWAN?.location || null,
+      signalQuality: parsedLoRaWAN?.signalQuality || null,
+      gatewayInfo: parsedLoRaWAN?.gatewayInfo || null,
     };
 
     message.hash = generateMessageHash({

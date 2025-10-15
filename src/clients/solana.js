@@ -266,23 +266,145 @@ class SolanaClient {
 
   /**
    * Create memo data for blockchain
+   * Enhanced with Layer 1: Asset Identity & Provenance
+   * Optimized to fit within Solana's 566-byte memo limit
    * @param {Object} batch - Batch object
    * @param {string} batchHash - Batch hash
    * @returns {string} JSON string for memo
    */
   createMemoData(batch, batchHash) {
+    // Compact timestamps (Unix seconds instead of ISO strings)
+    const now = Math.floor(Date.now() / 1000);
+    const start = batch.start_timestamp
+      ? Math.floor(new Date(batch.start_timestamp).getTime() / 1000)
+      : now;
+    const end = batch.end_timestamp
+      ? Math.floor(new Date(batch.end_timestamp).getTime() / 1000)
+      : now;
+
+    // Limit asset IDs to first 3 (most representative)
+    const assetIds = (batch.asset_ids || []).slice(0, 3);
+
+    // Compact asset types (unique only, limit to 2)
+    const assetTypes = [...new Set(batch.asset_types || [])].slice(0, 2);
+
+    // Compact site IDs (limit to 2)
+    const sites = (batch.site_ids || []).slice(0, 2);
+
+    // Compact location summary (only essential fields)
+    let loc = null;
+    if (batch.location_summary) {
+      const ls =
+        typeof batch.location_summary === "string"
+          ? JSON.parse(batch.location_summary)
+          : batch.location_summary;
+
+      // Only include if we have valid coordinates
+      if (ls.centroid?.lat && ls.centroid?.lon) {
+        loc = {
+          lat: parseFloat(ls.centroid.lat.toFixed(6)),
+          lon: parseFloat(ls.centroid.lon.toFixed(6)),
+          cnt: ls.assetCount || 0,
+        };
+      }
+    }
+
+    // Ultra-compact memo structure with short keys
     const memoData = {
-      type: "VEEP_BATCH",
-      version: "1.0",
-      batchId: batch.batch_id,
-      batchHash: batchHash,
-      messageCount: batch.message_count,
-      startTimestamp: batch.start_timestamp,
-      endTimestamp: batch.end_timestamp,
-      timestamp: new Date().toISOString(),
+      t: "VEEP_BATCH", // type
+      v: "2.0", // version
+      bid: batch.batch_id, // batchId
+      h: batchHash, // hash
+      mc: batch.message_count, // messageCount
+      ts: now, // timestamp
+      s: start, // start
+      e: end, // end
+
+      // Layer 1: Asset data (compact)
+      a:
+        assetIds.length > 0
+          ? {
+              ids: assetIds, // asset IDs (max 3)
+              typ: assetTypes, // asset types (max 2)
+              sit: sites, // sites (max 2)
+              loc: loc, // location summary (compact)
+            }
+          : null,
+
+      // Owner info (compact)
+      o: {
+        w: this.wallet.publicKey.toBase58(), // wallet
+        n: this.config.network, // network
+      },
     };
 
-    return JSON.stringify(memoData);
+    // Remove null fields to save space
+    if (!memoData.a) delete memoData.a;
+    if (memoData.a && !memoData.a.loc) delete memoData.a.loc;
+
+    const jsonString = JSON.stringify(memoData);
+
+    logger.debug("Memo data created", {
+      size: jsonString.length,
+      assetCount: assetIds.length,
+      hasLocation: !!loc,
+    });
+
+    return jsonString;
+  }
+
+  /**
+   * Expand compact memo data to readable format
+   * @param {Object} compactData - Compact memo data
+   * @returns {Object} Expanded memo data
+   */
+  expandMemoData(compactData) {
+    // Check if already expanded (has full field names)
+    if (compactData.type && compactData.batchId) {
+      return compactData; // Already in expanded format
+    }
+
+    // Expand compact format
+    const expanded = {
+      type: compactData.t,
+      version: compactData.v,
+      batchId: compactData.bid,
+      batchHash: compactData.h,
+      messageCount: compactData.mc,
+      timestamp: new Date(compactData.ts * 1000).toISOString(),
+      startTimestamp: new Date(compactData.s * 1000).toISOString(),
+      endTimestamp: new Date(compactData.e * 1000).toISOString(),
+    };
+
+    // Expand asset data if present
+    if (compactData.a) {
+      expanded.asset = {
+        assetIds: compactData.a.ids || [],
+        assetTypes: compactData.a.typ || [],
+        sites: compactData.a.sit || [],
+      };
+
+      // Expand location if present
+      if (compactData.a.loc) {
+        expanded.asset.locationSummary = {
+          centroid: {
+            lat: compactData.a.loc.lat,
+            lon: compactData.a.loc.lon,
+          },
+          assetCount: compactData.a.loc.cnt,
+        };
+      }
+    }
+
+    // Expand owner data
+    if (compactData.o) {
+      expanded.owner = {
+        walletAddress: compactData.o.w,
+        network: compactData.o.n,
+      };
+    }
+
+    return expanded;
   }
 
   /**
@@ -344,7 +466,10 @@ class SolanaClient {
             signature,
           };
         }
-        memoData = JSON.parse(memoText);
+        const rawData = JSON.parse(memoText);
+
+        // Expand compact format to readable format
+        memoData = this.expandMemoData(rawData);
       } catch (parseError) {
         logger.error("Failed to parse memo", {
           error: parseError.message,
