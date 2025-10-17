@@ -243,7 +243,7 @@ CREATE INDEX IF NOT EXISTS idx_batches_solana_pending
 
 ```json
 {
-  "type": "VEEP_BATCH",
+  "type": "VERIOT_BATCH",
   "version": "1.0",
   "batchId": "550e8400-e29b-41d4-a716-446655440000",
   "batchHash": "a3f5e9b2c1d8f7e6a4b3c2d1e0f9a8b7...",

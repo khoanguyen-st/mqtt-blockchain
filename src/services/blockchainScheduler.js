@@ -36,7 +36,8 @@ class BlockchainScheduler {
     // Cron format: minute hour day month weekday
     // "0 */3 * * *" = At minute 0 of every 3rd hour
     this.cronJob = cron.schedule(
-      "0 */3 * * *",
+      // "0 */3 * * *",
+      "*/10 * * * *",
       async () => {
         await this.recordBatchesToBlockchain();
       },
@@ -47,7 +48,8 @@ class BlockchainScheduler {
 
     this.isRunning = true;
     logger.info("BlockchainScheduler started", {
-      schedule: "Every 3 hours (0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h)",
+      // schedule: "Every 3 hours (0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h)",
+      schedule: "Every 10 minutes",
       timezone: "Asia/Ho_Chi_Minh",
       nextRun: this.getNextRunTime(),
     });
@@ -74,51 +76,83 @@ class BlockchainScheduler {
   /**
    * Get the next scheduled run time
    */
+  // getNextRunTime() {
+  //   const now = new Date();
+  //   const currentHour = now.getHours();
+
+  //   // Find next 3-hour slot: 0, 3, 6, 9, 12, 15, 18, 21
+  //   const scheduleHours = [0, 3, 6, 9, 12, 15, 18, 21];
+  //   let nextHour = scheduleHours.find((h) => h > currentHour);
+
+  //   if (!nextHour) {
+  //     // If no slot today, use first slot tomorrow
+  //     nextHour = scheduleHours[0];
+  //     now.setDate(now.getDate() + 1);
+  //   }
+
+  //   now.setHours(nextHour, 0, 0, 0);
+  //   return now;
+  // }
   getNextRunTime() {
     const now = new Date();
-    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
 
-    // Find next 3-hour slot: 0, 3, 6, 9, 12, 15, 18, 21
-    const scheduleHours = [0, 3, 6, 9, 12, 15, 18, 21];
-    let nextHour = scheduleHours.find((h) => h > currentHour);
+    // Find next 10-minute slot: 0, 10, 20, 30, 40, 50
+    const nextMinute = Math.ceil((currentMinute + 1) / 10) * 10;
 
-    if (!nextHour) {
-      // If no slot today, use first slot tomorrow
-      nextHour = scheduleHours[0];
-      now.setDate(now.getDate() + 1);
+    const nextRun = new Date(now);
+    if (nextMinute >= 60) {
+      nextRun.setHours(nextRun.getHours() + 1);
+      nextRun.setMinutes(0, 0, 0);
+    } else {
+      nextRun.setMinutes(nextMinute, 0, 0);
     }
 
-    now.setHours(nextHour, 0, 0, 0);
-    return now;
+    return nextRun;
   }
 
   /**
    * Calculate time window for current batch
    * Returns { start, end } timestamps
    */
+  // getCurrentTimeWindow() {
+  //   const now = new Date();
+  //   const currentHour = now.getHours();
+
+  //   // Find the current 3-hour slot
+  //   const scheduleHours = [0, 3, 6, 9, 12, 15, 18, 21];
+  //   let windowStartHour = 0;
+
+  //   for (let i = scheduleHours.length - 1; i >= 0; i--) {
+  //     if (currentHour >= scheduleHours[i]) {
+  //       windowStartHour = scheduleHours[i];
+  //       break;
+  //     }
+  //   }
+
+  //   // Calculate window end (3 hours later)
+  //   let windowEndHour = windowStartHour + 3;
+
+  //   const start = new Date(now);
+  //   start.setHours(windowStartHour, 0, 0, 0);
+
+  //   const end = new Date(now);
+  //   end.setHours(windowEndHour, 0, 0, 0);
+
+  //   return { start, end };
+  // }
   getCurrentTimeWindow() {
     const now = new Date();
-    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
 
-    // Find the current 3-hour slot
-    const scheduleHours = [0, 3, 6, 9, 12, 15, 18, 21];
-    let windowStartHour = 0;
-
-    for (let i = scheduleHours.length - 1; i >= 0; i--) {
-      if (currentHour >= scheduleHours[i]) {
-        windowStartHour = scheduleHours[i];
-        break;
-      }
-    }
-
-    // Calculate window end (3 hours later)
-    let windowEndHour = windowStartHour + 3;
+    // Find the current 10-minute slot
+    const windowStartMinute = Math.floor(currentMinute / 10) * 10;
 
     const start = new Date(now);
-    start.setHours(windowStartHour, 0, 0, 0);
+    start.setMinutes(windowStartMinute, 0, 0);
 
-    const end = new Date(now);
-    end.setHours(windowEndHour, 0, 0, 0);
+    const end = new Date(start);
+    end.setMinutes(end.getMinutes() + 10);
 
     return { start, end };
   }
@@ -244,7 +278,8 @@ class BlockchainScheduler {
       recordedBatches: this.recordedBatches,
       nextRunTime: this.isRunning ? this.getNextRunTime() : null,
       currentTimeWindow: this.getCurrentTimeWindow(),
-      schedule: "Every 3 hours (0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h)",
+      // schedule: "Every 3 hours (0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h)",
+      schedule: "Every 10 minutes",
     };
   }
 

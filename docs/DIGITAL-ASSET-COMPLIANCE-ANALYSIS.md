@@ -41,7 +41,7 @@ Dựa trên document "What information will be stored for digital asset on block
 ```javascript
 // File: src/clients/solana.js - createMemoData()
 {
-  type: "VEEP_BATCH",           // ✅ Asset type identifier
+  type: "VERIOT_BATCH",           // ✅ Asset type identifier
   version: "1.0",               // ✅ Version tracking
   batchId: batch.batch_id,      // ✅ Unique ID (UUID)
   batchHash: batchHash,         // ✅ Cryptographic fingerprint
@@ -73,7 +73,7 @@ site_id TEXT,                           -- ✅ Physical location identifier
 | Requirement             | Status         | Implementation               | Gap                      |
 | ----------------------- | -------------- | ---------------------------- | ------------------------ |
 | **Unique Asset ID**     | ✅ **COVERED** | batch_id (UUID)              | None                     |
-| **Asset Type**          | ✅ **COVERED** | type: "VEEP_BATCH"           | None                     |
+| **Asset Type**          | ✅ **COVERED** | type: "VERIOT_BATCH"         | None                     |
 | **Owner Address**       | ⚠️ **PARTIAL** | Wallet public key (implicit) | Not stored in memo       |
 | **Creation Date**       | ✅ **COVERED** | start_timestamp, timestamp   | None                     |
 | **Tokenization Source** | ⚠️ **PARTIAL** | Wallet signature (implicit)  | No explicit issuer field |
@@ -261,7 +261,7 @@ message.hash = generateMessageHash(message);
 ```javascript
 // Current: Only blockchain memo
 const memoData = {
-  type: "VEEP_BATCH",
+  type: "VERIOT_BATCH",
   batchId: batch.batch_id,
   batchHash: batchHash,
   // No IPFS/external links
@@ -765,7 +765,7 @@ const memoData = {
 // Enhanced memo data
 const memoData = {
   // Current fields
-  type: "VEEP_BATCH",
+  type: "VERIOT_BATCH",
   version: "2.0",  // Bump version
   batchId: batch.batch_id,
   batchHash: batchHash,

@@ -812,7 +812,7 @@ async function verifyMessageIntegrity(messageId) {
 │  │  ├─ Fee: 5000 lamports                                │
 │  │  ├─ Instructions:                                      │
 │  │  │  ├─ Transfer (1 lamport to self)                   │
-│  │  │  └─ Memo: {"t":"VEEP_BATCH","v":"2.0",...}         │
+│  │  │  └─ Memo: {"t":"VERIOT_BATCH","v":"2.0",...}         │
 │  │  └─ Status: Success                                    │
 │  └─ ...                                                    │
 └────────────────────────────────────────────────────────────┘
@@ -858,7 +858,7 @@ function createMemoData(batch, batchHash) {
 
   // Ultra-compact structure
   const memoData = {
-    t: "VEEP_BATCH", // type
+    t: "VERIOT_BATCH", // type
     v: "2.0", // version
     bid: batch.batch_id, // batchId
     h: batchHash, // hash
@@ -895,7 +895,7 @@ function createMemoData(batch, batchHash) {
 
 ```json
 {
-  "t": "VEEP_BATCH",
+  "t": "VERIOT_BATCH",
   "v": "2.0",
   "bid": "550e8400-e29b-41d4-a716-446655440000",
   "h": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
@@ -1486,7 +1486,7 @@ router.get("/:batchId/verify", async (req, res) => {
     "blockTime": 1729000000,
     "slot": 12345678,
     "data": {
-      "type": "VEEP_BATCH",
+      "type": "VERIOT_BATCH",
       "batchId": "550e8400-...",
       "batchHash": "a1b2c3d4..."
     },

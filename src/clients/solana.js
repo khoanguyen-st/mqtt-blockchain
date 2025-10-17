@@ -311,7 +311,7 @@ class SolanaClient {
 
     // Ultra-compact memo structure with short keys
     const memoData = {
-      t: "VEEP_BATCH", // type
+      t: "VERIOT_BATCH", // type
       v: "2.0", // version
       bid: batch.batch_id, // batchId
       h: batchHash, // hash

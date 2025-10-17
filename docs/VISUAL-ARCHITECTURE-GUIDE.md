@@ -435,7 +435,7 @@ SOLANA TRANSACTION ANATOMY
 ```
 BEFORE OPTIMIZATION (586 bytes - TOO LARGE ❌)
 {
-  "type": "VEEP_BATCH",
+  "type": "VERIOT_BATCH",
   "version": "2.0",
   "batchId": "550e8400-e29b-41d4-a716-446655440000",
   "batchHash": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6...",
@@ -472,7 +472,7 @@ BEFORE OPTIMIZATION (586 bytes - TOO LARGE ❌)
 
 AFTER OPTIMIZATION (379 bytes - FITS ✅)
 {
-  "t":"VEEP_BATCH",
+  "t":"VERIOT_BATCH",
   "v":"2.0",
   "bid":"550e8400-e29b-41d4-a716-446655440000",
   "h":"a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6...",
@@ -503,7 +503,7 @@ MARGIN: 187 bytes remaining (33% buffer)
 │ ┌─────────────────────────────────────────────────────┐ │
 │ │ Solana Ledger                                       │ │
 │ │ • Transaction: SH1wZaVvyo...                        │ │
-│ │ • Memo: {"t":"VEEP_BATCH","h":"a1b2c3d4...",...}   │ │
+│ │ • Memo: {"t":"VERIOT_BATCH","h":"a1b2c3d4...",...}   │ │
 │ │ • Block: 12345678                                   │ │
 │ │ • Status: Finalized                                 │ │
 │ └─────────────────────────────────────────────────────┘ │

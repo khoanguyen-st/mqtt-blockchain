@@ -136,7 +136,7 @@ class SolanaClient {
 async recordBatch(batch, batchHash) {
   // 1. Create memo data
   const memoData = {
-    type: 'VEEP_BATCH',
+    type: 'VERIOT_BATCH',
     batchId, batchHash, messageCount, timestamps
   };
 
@@ -323,7 +323,7 @@ Response:
     "explorer": "https://explorer.solana.com/tx/5j7s8dH3kS9...",
     "verified": true,
     "onChainData": {
-      "type": "VEEP_BATCH",
+      "type": "VERIOT_BATCH",
       "batchHash": "a3f5e9b2...",
       "messageCount": 1000
     }
@@ -613,7 +613,7 @@ loadWallet() {
 ```javascript
 // Only include non-sensitive metadata
 const memoData = {
-  type: "VEEP_BATCH", // ✓ Safe
+  type: "VERIOT_BATCH", // ✓ Safe
   batchHash: "...", // ✓ Safe (hash, not data)
   messageCount: 1000, // ✓ Safe (count, not content)
   timestamp: "...", // ✓ Safe

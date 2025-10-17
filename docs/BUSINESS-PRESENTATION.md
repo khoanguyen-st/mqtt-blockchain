@@ -174,7 +174,7 @@
 
 ```json
 {
-  "type": "VEEP_BATCH",
+  "type": "VERIOT_BATCH",
   "version": "2.0",
   "batchId": "550e8400-e29b-41d4-a716-446655440000",
   "messageCount": 10,

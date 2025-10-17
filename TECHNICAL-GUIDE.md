@@ -285,7 +285,7 @@ class SolanaClient {
   async recordBatch(batchId, messageCount, batchHash) {
     // Create memo instruction with batch data
     const memoData = {
-      type: "VEEP_BATCH",
+      type: "VERIOT_BATCH",
       version: "1.0",
       batchId,
       batchHash,
